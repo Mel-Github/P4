@@ -12,6 +12,8 @@ SET curlHOME=E:\Apps\Softwares\Curl
 SET JenkinsHOST=JenkinsHOst:8080
 
 
+SET projectName=""
+SET streamName=""
 SET mavenProject=""
 SET previousValue=""
 SET currentValue=""
@@ -78,6 +80,7 @@ echo Parameter2=!concatParameter!  >>  E:\temp\label-trigger1.txt  2>&1
 for /f "tokens=3 delims=, " %%a in ("!concatParameter!") do set depotStream=%%a
 echo depotStream=!depotStream! >>  E:\temp\label-trigger1.txt  2>&1
 
+
 REM Extract the RM and CR info
 for /f "tokens=1,2 delims=_ " %%a in ("!labelname!") do set RM=%%a&set CR=%%b
 echo RM=%RM% CR=%CR%  >>  E:\temp\label-trigger1.txt  2>&1
@@ -85,6 +88,19 @@ echo RM=%RM% CR=%CR%  >>  E:\temp\label-trigger1.txt  2>&1
 REM Extract the depot and stream info
 for /f "tokens=1,2,3 delims=/ " %%a in ("!depotStream!") do set depotName=%%a&set streamName=%%b&set projectName=%%c
 echo depotName=%depotName% streamName=%streamName% projectName=%projectName% >>  E:\temp\label-trigger1.txt  2>&1
+echo depotName=%depotName% streamName=%streamName% projectName=%projectName% 
+
+
+REM Ensure user is performing the label from the Perforce Stream Perspective
+SET streamInfo=//!depotName!/!streamName!
+echo streamInfo=!streamInfo! >>  E:\temp\label-trigger1.txt  2>&1
+echo streamInfo=!streamInfo! 
+E:\Perforce\p4 streams !streamInfo! 
+
+IF %ERRORLEVEL% NEQ 0 ( 
+   echo "Please create label from the stream Perspective instead of workspace perspective" 
+   exit 1
+)
 
 SET argument=%RM%_%CR%
 echo !argument! %CR% %RM% 
@@ -95,16 +111,16 @@ echo projectName=!projectName!
 
 set tempProjectName=!projectName:~0,3!
 echo tempProjectName=!tempProjectName!
-
+REM //streams-depot/RM000005/sewpims/Jenkinsfile#1 - branch change 4644 (text)
 REM Label applied to only 1 project, build only 1 project
 IF "!tempProjectName!" NEQ "..." (
 	REM Check if Jenkinfile exist
 	FOR /F "tokens=3,4 delims=/" %%a in ('E:\Perforce\p4 files @!argument!') do (
 		set p4projectName=%%a
 		set 1_Jenkinsfile=%%b
-		echo Comparing p4projectName=!p4projectName! and projectName=!projectName!  
+		REM echo Comparing p4projectName=!p4projectName! and projectName=!projectName!  
 		IF "!p4projectName!"=="!projectName!" (
-			echo Match project! 
+			REM echo Match project! 
 			set 1_Jenkinsfile=!1_Jenkinsfile:~0,11!
 			
 			IF "!1_Jenkinsfile!"=="Jenkinsfile" (
